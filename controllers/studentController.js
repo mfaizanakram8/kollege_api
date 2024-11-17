@@ -112,20 +112,8 @@ const updateStudent = asyncHandler(async (req, res) => {
 // @access Private
 const deleteStudent = asyncHandler(async (req, res) => {
   const { id } = req.body;
-
-  if (!id) {
-    return res.status(400).json({ message: "Student ID required" });
-  }
-
   const student = await Student.findById(id).exec();
-
-  if (!student) {
-    return res.status(400).json({ message: "Student not found" });
-  }
-
   const result = await student.deleteOne();
-
-  res.json({ message: `${result.username} deleted` });
 });
 
 module.exports = {

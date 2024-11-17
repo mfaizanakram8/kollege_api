@@ -1,14 +1,14 @@
 const allowedOrigins = [
-  "https://kollege.onrender.com",
+  "https://ums-murshad.vercel.app/",
   "http://localhost:3000",
+  "http://localhost:3500"
 ];
 
 const corsOptions = {
   origin: (origin, callback) => {
     if (
       allowedOrigins.indexOf(origin) !== -1
-      //! remove in production
-      // || !origin
+      || !origin
     ) {
       callback(null, true);
     } else {
