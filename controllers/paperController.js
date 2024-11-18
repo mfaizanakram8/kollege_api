@@ -6,18 +6,20 @@ const asyncHandler = require("express-async-handler");
 // @route GET /Paper/staff/staffId
 // @access Everyone
 const getPapersStaff = asyncHandler(async (req, res) => {
+  console.log("Getting papers for staff ID:", req.params.staffId);
+  
   if (!req?.params?.staffId) {
-    return res.status(400).json({ message: "Staff ID Missing" });
+    return res.status(400).json({ message: "Staff ID required" });
   }
-  const papers = await Paper.find({
-    teacher: req.params.staffId,
-  })
-    .select("-students")
-    .exec();
-  if (!papers) {
-    return res.status(404).json({
-      message: `No Paper(s) found`,
-    });
+
+  const papers = await Paper.find({ teacher: req.params.staffId })
+    .populate('students', 'name')
+    .lean();
+
+  console.log("Found papers:", papers);
+
+  if (!papers?.length) {
+    return res.status(404).json({ message: "No papers found for this staff" });
   }
 
   res.json(papers);
@@ -248,6 +250,39 @@ const deletePaper = asyncHandler(async (req, res) => {
   res.json({ message: `${paper} deleted` });
 });
 
+const getTeacherPapers = asyncHandler(async (req, res) => {
+  if (!req?.params?.teacherId) {
+    return res.status(400).json({ message: "Teacher ID required" });
+  }
+
+  const papers = await Paper.find({ teacher: req.params.teacherId })
+    .populate('students', 'name')
+    .lean();
+
+  if (!papers?.length) {
+    return res.status(404).json({ message: "No papers found for this teacher" });
+  }
+
+  res.json(papers);
+});
+
+const getDepartmentPapers = asyncHandler(async (req, res) => {
+  if (!req?.params?.department) {
+    return res.status(400).json({ message: "Department required" });
+  }
+
+  const papers = await Paper.find({ department: req.params.department })
+    .populate('students', 'name')
+    .populate('teacher', 'name')
+    .lean();
+
+  if (!papers?.length) {
+    return res.status(404).json({ message: "No papers found for this department" });
+  }
+
+  res.json(papers);
+});
+
 module.exports = {
   addPaper,
   getAllPapers,
@@ -257,4 +292,6 @@ module.exports = {
   getPaper,
   updateStudents,
   deletePaper,
+  getTeacherPapers,
+  getDepartmentPapers,
 };

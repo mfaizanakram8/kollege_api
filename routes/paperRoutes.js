@@ -15,4 +15,7 @@ router
   .patch(paperController.updateStudents)
   .delete(paperController.deletePaper);
 
+router.route("/teacher/:teacherId").get(paperController.getTeacherPapers);
+router.route("/department/:department").get(paperController.getDepartmentPapers);
+
 module.exports = router;

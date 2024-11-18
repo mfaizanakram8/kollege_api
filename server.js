@@ -31,13 +31,13 @@ app.use("/notes", require("./routes/notesRoutes"));
 app.use("/internal", require("./routes/internalRoutes"));
 app.use("/attendance", require("./routes/attendanceRoutes"));
 app.use("/time_schedule", require("./routes/timeScheduleRoutes"));
-app.use("/staff", require("./routes/staffRoutes"));
 app.use("/student", require("./routes/studentRoutes"));
+app.use("/staff", require("./routes/staffRoutes"));
 
 app.all("*", (req, res) => {
   res.status(404);
   if (req.accepts("json")) {
-    res.json({ message: "404 Not Found", details: "No paths found" });
+    res.json({ message: "404 Not Found" });
   } else {
     res.type("txt").send("404 Not Found");
   }

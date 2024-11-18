@@ -1,15 +1,12 @@
 const TimeSchedule = require("./../models/TimeSchedule");
 const asyncHandler = require("express-async-handler");
 
-// @desc Get TimeSchedule for each User
-// @route GET /TimeSchedule
-// @access Everyone
 const getTimeSchedule = async (req, res) => {
-  if (!req?.params?.user_id) {
-    return res.status(400).json({ message: "ID Required" });
+  if (!req?.params?.department) {
+    return res.status(400).json({ message: "Department Required" });
   }
   const timeSchedule = await TimeSchedule.findOne({
-    user: req.params.user_id,
+    department: req.params.department,
   }).exec();
   if (!timeSchedule) {
     return res.status(404).json({
@@ -19,90 +16,50 @@ const getTimeSchedule = async (req, res) => {
   res.json(timeSchedule);
 };
 
-// @desc Add TimeSchedule
-// @route POST /time_Schedule
-// @access Private
 const addTimeSchedule = asyncHandler(async (req, res) => {
-  const { user, schedule } = req.body;
+  const { department, schedule } = req.body;
 
-  // Confirm Data
-  if (!user || !schedule) {
-    return res
-      .status(400)
-      .json({ message: "Incomplete Request: Fields Missing" });
+  if (!department || !schedule) {
+    return res.status(400).json({ message: "All fields are required" });
   }
 
-  // Check for Duplicates
-  const duplicate = await TimeSchedule.findOne({
-    user: user,
-  })
-    .lean()
-    .exec();
-
-  if (duplicate) {
-    return res.status(409).json({ message: "Time Schedule already exists" });
-  }
-
-  const TimeScheduleObj = {
-    user,
-    schedule,
-  };
-
-  // Create and Store New Time Schedule
+  const TimeScheduleObj = { department, schedule };
   const record = await TimeSchedule.create(TimeScheduleObj);
 
   if (record) {
-    res.status(201).json({
-      message: `Time Schedule added successfully`,
-    });
+    res.status(201).json(record);
   } else {
     res.status(400).json({ message: "Invalid data received" });
   }
 });
 
-// @desc Update TimeSchedule
-// @route PATCH /TimeSchedule
-// @access Private
 const updateTimeSchedule = asyncHandler(async (req, res) => {
-  const { user, schedule } = req.body;
+  const { department, schedule } = req.body;
 
-  // Confirm Data
-  if (!user || !schedule) {
+  if (!department || !schedule) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
-  // Find Record
-  const record = await TimeSchedule.findOne({ user: user }).exec();
+  // Find schedule
+  const timeSchedule = await TimeSchedule.findOne({ department }).exec();
 
-  if (!record) {
-    return res.status(404).json({ message: "Time Schedule doesn't exist" });
+  if (!timeSchedule) {
+    // Create if doesn't exist
+    const newSchedule = await TimeSchedule.create({ department, schedule });
+    return res.json(newSchedule);
   }
 
-  // // Check for duplicate
-  // const duplicate = await TimeSchedule.findOne({
-  //   user_id: req.params.user_id,
-  // })
-  //   .lean()
-  //   .exec();
+  // Update existing schedule
+  timeSchedule.schedule = schedule;
+  const updatedSchedule = await timeSchedule.save();
 
-  // // Allow Updates to original
-  // if (duplicate && duplicate?._id.toString() !== id) {
-  //   return res.status(409).json({ message: "Duplicate Time Schedule" });
-  // }
-
-  record.schedule = schedule;
-
-  const save = await record.save();
-  if (save) {
-    res.json({ message: `Time Schedule Updated` });
+  if (updatedSchedule) {
+    res.json(updatedSchedule);
   } else {
-    res.json({ message: "Save Failed" });
+    res.status(400).json({ message: "Failed to update schedule" });
   }
 });
 
-// @desc Delete TimeSchedule
-// @route DELETE /time_schedule
-// @access Private
 const deleteTimeSchedule = asyncHandler(async (req, res) => {
   if (!req?.params?.user_id) {
     return res.status(400).json({ message: "ID Required" });

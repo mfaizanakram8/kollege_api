@@ -1,6 +1,8 @@
 const Staff = require("../models/Staff");
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcrypt");
+const Student = require("../models/Student");
+const Paper = require("../models/Paper");
 
 // @desc Get Staff
 // @route GET /staff
@@ -21,17 +23,19 @@ const getStaff = asyncHandler(async (req, res) => {
 // @route GET /Staffs
 // @access Private
 const getNewStaffs = asyncHandler(async (req, res) => {
-  if (!req?.params?.department)
-    return res.status(400).json({ message: "Params Missing" });
-
+  console.log("Department:", req.params.department);
+  
   const staffs = await Staff.find({
     department: req.params.department,
-    role: "",
+    role: { $eq: "" }
   })
-    .select("-password")
-    .lean();
+  .select("-password")
+  .lean();
+
+  console.log("Found staffs:", staffs);
+
   if (!staffs?.length) {
-    return res.status(404).json({ message: "No Registered Staff(s) Found." });
+    return res.status(404).json({ message: "No pending staff approvals" });
   }
   res.json(staffs);
 });
@@ -102,25 +106,19 @@ const createNewStaff = asyncHandler(async (req, res) => {
 // @route PATCH /Staff
 // @access Private
 const approveStaff = asyncHandler(async (req, res) => {
-  const { id, role } = req.body;
+  const { id } = req.body;
 
-  // Confirm Data
-  if ((!id, !role)) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
   // Find Staff
   const staff = await Staff.findById(id).exec();
   if (!staff) {
     return res.status(400).json({ message: "User not found" });
   }
 
-  staff.role = role;
+  staff.role = "teacher"; // Explicitly set role to "teacher"
+  console.log("Setting staff role to:", staff.role);
 
-  // if (password) {
-  //   // Hash Pwd
-  //   staff.password = await bcrypt.hash(password, 10);
-  // }
   await staff.save();
+  console.log("Staff saved with role:", staff.role);
 
   res.json({ message: "Staff Approved" });
 });
@@ -146,6 +144,48 @@ const deleteStaff = asyncHandler(async (req, res) => {
   res.json({ message: `${result.username} deleted` });
 });
 
+// @desc Get New Students
+// @route GET /NewStudents
+// @access Private
+const getNewStudents = asyncHandler(async (req, res) => {
+  if (!req?.params?.department)
+    return res.status(400).json({ message: "Params Missing" });
+
+  const students = await Student.find({
+    department: req.params.department,
+    approved: false
+  })
+    .select("-password")
+    .lean();
+  if (!students?.length) {
+    return res.status(404).json({ message: "No Registered Student(s) Found." });
+  }
+  res.json(students);
+});
+
+// @desc Get Staff Papers
+// @route GET /papers/:staffId
+// @access Private
+const getStaffPapers = asyncHandler(async (req, res) => {
+  console.log("Getting papers for staff:", req.params.staffId);
+  
+  if (!req?.params?.staffId) {
+    return res.status(400).json({ message: "Staff ID required" });
+  }
+
+  const papers = await Paper.find({ teacher: req.params.staffId })
+    .populate('students', 'name')
+    .lean();
+
+  console.log("Found papers:", papers);
+
+  if (!papers?.length) {
+    return res.status(404).json({ message: "No papers found for this staff" });
+  }
+
+  res.json(papers);
+});
+
 module.exports = {
   getStaff,
   getNewStaffs,
@@ -153,4 +193,6 @@ module.exports = {
   createNewStaff,
   approveStaff,
   deleteStaff,
+  getNewStudents,
+  getStaffPapers
 };

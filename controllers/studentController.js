@@ -32,10 +32,10 @@ const getAllStudents = asyncHandler(async (req, res) => {
 // @route POST /Student
 // @access Private
 const createNewStudent = asyncHandler(async (req, res) => {
-  const { name, course, email, username, password } = req.body;
+  const { name, course, email, username, password, department } = req.body;
 
   // Confirm Data
-  if (!name || !email || !course || !username || !password) {
+  if (!name || !email || !course || !username || !password || !department) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -47,7 +47,7 @@ const createNewStudent = asyncHandler(async (req, res) => {
   }
 
   // Hash Password
-  const hashedPwd = await bcrypt.hash(password, 10); // salt rounds
+  const hashedPwd = await bcrypt.hash(password, 10);
 
   const studentObj = {
     name,
@@ -55,13 +55,15 @@ const createNewStudent = asyncHandler(async (req, res) => {
     email,
     username,
     password: hashedPwd,
+    department,
+    approved: false
   };
 
   // Create and Store New student
   const student = await Student.create(studentObj);
 
   if (student) {
-    res.status(201).json({ message: `New Student ${name} created` });
+    res.status(201).json({ message: `New Student ${name} registered. Waiting for HOD approval.` });
   } else {
     res.status(400).json({ message: "Invalid data received" });
   }
@@ -71,40 +73,23 @@ const createNewStudent = asyncHandler(async (req, res) => {
 // @route PATCH /Student
 // @access Private
 const updateStudent = asyncHandler(async (req, res) => {
-  const { id, name, email, username, password } = req.body;
+  console.log("Update student request:", req.body);
+  const { id, approved } = req.body;
 
-  // Confirm Data
-  if (!id || !name || !email || !username) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
-
-  // Find Student
   const student = await Student.findById(id).exec();
+  console.log("Found student:", student);
 
   if (!student) {
-    return res.status(400).json({ message: "User not found" });
+    return res.status(400).json({ message: "Student not found" });
   }
 
-  // Check for duplicate
-  const duplicate = await Student.findOne({ username }).lean().exec();
-
-  // Allow Updates to original
-  if (duplicate && duplicate?._id.toString() !== id) {
-    return res.status(409).json({ message: "Duplicate Username" });
-  }
-
-  student.name = name;
-  student.email = email;
-  student.username = username;
-
-  if (password) {
-    // Hash Pwd
-    student.password = await bcrypt.hash(password, 10);
-  }
+  student.approved = approved;
+  console.log("Updated student:", student);
 
   await student.save();
+  console.log("Student saved");
 
-  res.json({ message: "User Updated" });
+  res.json({ message: "Student approved successfully" });
 });
 
 // @desc Delete Student
@@ -116,10 +101,38 @@ const deleteStudent = asyncHandler(async (req, res) => {
   const result = await student.deleteOne();
 });
 
+const getNewStudents = asyncHandler(async (req, res) => {
+  console.log("Getting new students");
+  console.log("Department:", req.params.department);
+
+  try {
+    const students = await Student.find({
+      department: req.params.department,
+      approved: false
+    })
+    .select("-password")
+    .lean();
+
+    console.log("Found students:", students);
+
+    if (!students?.length) {
+      console.log("No students found");
+      return res.status(404).json({ message: "No pending student approvals" });
+    }
+
+    console.log("Returning students:", students);
+    res.json(students);
+  } catch (err) {
+    console.error("Error in getNewStudents:", err);
+    throw err;
+  }
+});
+
 module.exports = {
   getStudent,
   getAllStudents,
   createNewStudent,
   updateStudent,
   deleteStudent,
+  getNewStudents
 };
