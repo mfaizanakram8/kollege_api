@@ -1,6 +1,6 @@
 const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3500"
+  'https://your-frontend-url.com',
+  'http://localhost:3000'
 ];
 
 const corsOptions = {

@@ -2,9 +2,7 @@ const { default: mongoose } = require("mongoose");
 const Attendance = require("./../models/Attendance");
 const asyncHandler = require("express-async-handler");
 
-// @desc Get Attendance
-// @route GET /attendance
-// @access Everyone
+
 const getAttendance = async (req, res) => {
   if (!req?.params?.paper || !req?.params?.date || !req?.params?.hour) {
     return res
@@ -26,9 +24,7 @@ const getAttendance = async (req, res) => {
   res.json(attendance);
 };
 
-// @desc Get Attendance Student
-// @route GET /attendance/student/date
-// @access Everyone
+
 const getAttendanceStudent = asyncHandler(async (req, res) => {
   if (!req?.params?.studentId || !req?.params?.date) {
     return res
@@ -88,9 +84,7 @@ const getAttendanceStudent = asyncHandler(async (req, res) => {
   res.json(attendance);
 });
 
-// @desc Add Attendance
-// @route POST /attendance
-// @access Private
+
 const addAttendance = asyncHandler(async (req, res) => {
   const { paper, date, hour, attendance } = req.body;
 
